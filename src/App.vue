@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <child />
     <div id="nav">
       <router-link to="/">Home</router-link> |
       <router-link to="/about">About</router-link>
@@ -8,6 +9,21 @@
   </div>
 </template>
 
+<script>
+import Child from '@/components/Child.vue';
+export default {
+  xxx: 'App',
+  data() {
+    return {}
+  },
+  components: {
+    Child
+  },
+  mounted() {
+    console.log('App', this);
+  }
+}
+</script>
 <style lang="less">
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
