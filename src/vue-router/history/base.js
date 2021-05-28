@@ -1,17 +1,31 @@
 export function createRoute(record, location) {
   let res = [];
 
-  while(record) {
-    res.unshift(record)
-    record = record.parent
+  while (record) {
+    res.unshift(record);
+    record = record.parent;
   }
- 
+
   return {
     location,
-    matched: res
-  }
+    matched: res,
+  };
 }
 
+function runQueue(queue, iterator, cb) {
+  function step(index) {
+    if(index >= queue.length) {
+      cb()
+    } else {
+      let hook = queue[index]
+      iterator(hook, () => {
+        step(index+1)
+      })
+    }
+  }
+
+  step(0)
+}
 
 export default class History {
   constructor(router) {
@@ -24,12 +38,32 @@ export default class History {
   // 根据路径进行组件渲染
   transitionTo(location, onComplete) {
     let route = this.router.match(location); // route = { path: '/about/a', matched: [{}, {}]  }
-    this.current = route;
-    this.cb(route);
-    onComplete && onComplete();
+    if (
+      location === this.current.path &&
+      route.matched.length === this.current.matched.length
+    ) {
+      return;
+    }
+
+    let queue = [].concat(this.router.beforeHooks);
+
+    const iterator = (hook, next) => {
+      hook(route, this.current, () => {
+        next();
+      })
+    }
+
+    runQueue(queue, iterator, () => {
+      this.updateRoute(route);
+      onComplete && onComplete();
+    });
   }
 
   listen(cb) {
-    this.cb = cb
+    this.cb = cb;
+  }
+  updateRoute(route) {
+    this.current = route;
+    this.cb(route);
   }
 }

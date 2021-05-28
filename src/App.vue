@@ -18,9 +18,6 @@ export default {
   },
   components: {
     Child
-  },
-  mounted() {
-    console.log('App', this);
   }
 }
 </script>

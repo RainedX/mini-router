@@ -8,8 +8,7 @@ export default {
     return {}
   },
   mounted() {
-    // 拿到根实例
-    console.log('child', this._routerRoot);
+    console.log(111, this.$store);
   }
 }
 </script>

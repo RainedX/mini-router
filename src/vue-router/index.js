@@ -7,7 +7,7 @@ export default class VueRouter {
   constructor(options) {
     // 路由的核心：根据用户的路径配置 ===> 返回对应的组件 ===> 页面跳转时渲染组件
     this.matcher = createMatcher(options.routes || []);
-
+    this.beforeHooks = []
     // 根据当前的mode创建不同的history管理策略
     let mode = options.mode || 'hash';
     switch (mode) {
@@ -31,13 +31,14 @@ export default class VueRouter {
   go(n) {
     this.history.go(n);
   }
-
   back() {
     this.go(-1);
   }
-
   forward() {
     this.go(1);
+  }
+  beforeEach(fn) {
+    this.beforeHooks.push(fn)
   }
   // app是根实例
   init(app) {

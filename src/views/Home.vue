@@ -1,12 +1,25 @@
 <template>
   <div class="home">
-    home
+    {{$store.state.name}}: {{ $store.state.age }}
+    <p><button @click="handleClick">同步</button></p>
+    <p><button @click="handleAsyncClick">异步</button></p>
   </div>
 </template>
 
 <script>
 
 export default {
-  name: 'Home'
+  name: 'Home',
+  methods: {
+    handleClick() {
+      this.$store.state.age++;
+    },
+    async handleAsyncClick() {
+      this.$store.dispatch('asyncChangeAge', 10);
+    }
+  },
+  mounted() {
+    console.log('Home', this);
+  }
 }
 </script>
