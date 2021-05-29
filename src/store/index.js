@@ -10,6 +10,7 @@ export default new Vuex.Store({
   },
   getters: {
     myAge(state) {
+      console.log(1111, 'ok');
       return state.age + 1
     }
   },
