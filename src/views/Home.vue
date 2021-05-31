@@ -1,7 +1,9 @@
 <template>
   <div class="home">
     {{ $store.state.name }}: {{ $store.state.age }}
-    myAge: {{ $store.getters.myAge }}
+    <p>myAge-getters: {{ $store.getters.myAge }}</p>
+    <p>moduleA: {{$store.state.a.name}} {{$store.state.a.age}}</p>
+    <p>moduleB: {{$store.state.b.name}} {{$store.state.b.age}}</p>
     <p><button @click="handleClick">同步</button></p>
     <p><button @click="handleAsyncClick">异步</button></p>
   </div>
@@ -20,7 +22,7 @@ export default {
     }
   },
   mounted() {
-    console.log('Home', this);
+    console.log(111, this.$store);
   }
 }
 </script>

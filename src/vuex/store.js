@@ -1,63 +1,85 @@
-import { applyMixin } from './mixin'
+import { applyMixin } from './mixin';
+import ModuleCollection from './module/module-collection';
+import { forEachValue } from './utils';
 
 let Vue;
 
-function forEachValue (obj, fn) {
-  Object.keys(obj).forEach(key => fn(obj[key], key))
+const installModule = (store, path, module, rootState) => {
+  // 将子模块的状态定义在根模块上
+  if (path.length > 0) {
+    let parentList = path.slice(0, -1);
+    let parent = parentList.reduce((memo, current) => {
+      return memo[current];
+    }, rootState);
+    Vue.set(parent, path[path.length - 1], module.state);
+  }
+  module.forEachMutation((mutation, key) => {
+    store.mutations[key] = store.mutations[key] || [];
+    store.mutations[key].push(payload =>
+      mutation.call(store, module.state, payload),
+    );
+  });
+  module.forEachAction((action, key) => {
+    store.actions[key] = store.actions[key] || [];
+    store.actions[key].push(payload => action.call(store, store, payload));
+  });
+  module.forEachChildren((childModule, key) => {
+    installModule(store, path.concat(key), childModule, rootState);
+  });
+  module.forEachGetter((getter, key) => {
+    store.wrappedGetters[key] = () => {
+      return getter.call(store, module.state);
+    };
+  });
+};
+
+function resetStoreVM(store, state) {
+  const computed = {};
+  store.getters = {};
+  const wrappedGetters = store.wrappedGetters;
+  forEachValue(wrappedGetters, (fn, key) => {
+    computed[key] = () => {
+      return fn(store.state);
+    };
+    Object.defineProperty(store.getters, key, {
+      get: () => store._vm[key],
+    });
+  });
+  store._vm = new Vue({
+    data: {
+      $$state: state,
+    },
+    computed,
+  });
 }
 
 export class Store {
   constructor(options) {
-    this.getters = {};
+    this._modules = new ModuleCollection(options);
     this.mutations = {};
     this.actions = {};
-    const computed = {};
-    // this.$store = this.$options.store = new Vuex.Store() ===> 这里的this;
+    this.getters = {};
+    this.wrappedGetters = {};
 
-    forEachValue(options.getters, (value, key) => {
-      computed[key] = () => {
-        return value.call(this, this.state)
-      }
-
-      Object.defineProperty(this.getters, key, {
-        get: () => this._vm[key]
-      })
-    })
-    this._vm = new Vue({
-      data() {
-        return {
-          $$state: options.state
-        }
-      },
-      computed
-    })
-    forEachValue(options.mutations, (value, key) => {
-      this.mutations[key] = (payload) => {
-        return value.call(this, this.state, payload)
-      }
-    })
-    forEachValue(options.actions, (value, key) => {
-      this.actions[key] = (payload) => {
-        return value.call(this, this, payload)
-      }
-    })
+    let state = options.state;
+    installModule(this, [], this._modules.root, state);
+    resetStoreVM(this, state);
   }
   get state() {
     return this._vm._data.$$state;
   }
   commit = (type, payload) => {
-    this.mutations[type](payload)
+    this.mutations[type] && this.mutations[type].forEach(fn => fn((this.state, payload)));
   }
   dispatch = (type, payload) => {
-    this.actions[type](payload)
+    this.actions[type] && this.actions[type].forEach(fn => fn((this, payload)));
   }
 }
 
-export const install = (_Vue) =>{
+export const install = _Vue => {
   Vue = _Vue;
   applyMixin(Vue);
-}
-
+};
 
 // function Store() {
 //   let { commit } = this;
@@ -67,3 +89,34 @@ export const install = (_Vue) =>{
 // }
 
 // let { commit } = new Store()
+
+// 生成树结构
+
+// let _root = {
+//   _rawModule:{ state, mutations, getters, actions,.... },
+//   _children: {
+//     a: {
+//       _rawModule: { state, mutations, getters, actions,.... },
+//       _children: {
+//         c: {
+//           _rawModule: { state, mutations, getters, actions,.... },
+//           _children: {},
+//           state: { xxx }
+//         }
+//       },
+//       state: aState
+//     },
+//     b: {
+//       _rawModule: { state, mutations, getters, actions,.... },
+//       _children: {
+//         c: {
+//           _rawModule: { state, mutations, getters, actions,.... },
+//           _children: {},
+//           state: { xxx }
+//         }
+//       },
+//       state: bState
+//     }
+//   },
+//   state: rootState
+// }
