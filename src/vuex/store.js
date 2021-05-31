@@ -5,6 +5,7 @@ import { forEachValue } from './utils';
 let Vue;
 
 const installModule = (store, path, module, rootState) => {
+  let namespace = store._modules.getNamespace(path);
   // 将子模块的状态定义在根模块上
   if (path.length > 0) {
     let parentList = path.slice(0, -1);
@@ -14,20 +15,20 @@ const installModule = (store, path, module, rootState) => {
     Vue.set(parent, path[path.length - 1], module.state);
   }
   module.forEachMutation((mutation, key) => {
-    store.mutations[key] = store.mutations[key] || [];
-    store.mutations[key].push(payload =>
+    store.mutations[namespace + key] = store.mutations[namespace + key] || [];
+    store.mutations[namespace + key].push(payload =>
       mutation.call(store, module.state, payload),
     );
   });
   module.forEachAction((action, key) => {
-    store.actions[key] = store.actions[key] || [];
-    store.actions[key].push(payload => action.call(store, store, payload));
+    store.actions[namespace + key] = store.actions[namespace + key] || [];
+    store.actions[namespace + key].push(payload => action.call(store, store, payload));
   });
   module.forEachChildren((childModule, key) => {
     installModule(store, path.concat(key), childModule, rootState);
   });
   module.forEachGetter((getter, key) => {
-    store.wrappedGetters[key] = () => {
+    store.wrappedGetters[namespace + key] = () => {
       return getter.call(store, module.state);
     };
   });

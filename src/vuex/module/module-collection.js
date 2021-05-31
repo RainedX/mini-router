@@ -6,6 +6,15 @@ export default class ModuleCollection {
     this.root = null;
     this.register([], options);
   }
+  
+  getNamespace(path) {
+    let module = this.root;
+
+    return path.reduce((namespace, key) => {
+      module = module.getChild(key);
+      return namespace + (module.namespaced ? key + '/' : '');
+    }, '')
+  }
 
   register(path, rootModule) {
     let newModule = new Module(rootModule);
@@ -20,6 +29,8 @@ export default class ModuleCollection {
       }, this.root)
       parent.addChild(path[path.length - 1], newModule);
     }
+
+    // vuex中写的modules，rootModule代表options
     if (rootModule.modules) {
       forEachValue(rootModule.modules, (module, moduleName) => {
         this.register(path.concat(moduleName), module)
